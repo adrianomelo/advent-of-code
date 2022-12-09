@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -Wno-overlapping-patterns #-}
 {-# LANGUAGE FlexibleContexts  #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 module Main where
 
@@ -20,15 +21,25 @@ main = do
 
     let directions = map parse content
     let moves = concatMap directionToMove directions
+
+    -- part 1
     let ropeMovement = scanl moveHead initialRope moves
     let visited = List.nub $ map snd ropeMovement
     let positions = length visited
 
+    -- part 2
+    let ropeMovementN = scanl moveRopeN initialRopeN moves
+    let visitedN = List.nub $ map last ropeMovementN
+    let positionsN = length visitedN
+
     -- print directions
     -- print moves
     -- print ropeMovement
-    print visited
-    print positions
+    -- print visited
+    -- print positions  -- 6745
+
+    --print ropeMovementN
+    print positionsN
 
     hClose handle
 
@@ -39,6 +50,22 @@ data Direction
     | R Int
     | NoOp
     deriving (Show)
+
+type Knot = (Int, Int)
+type RopeN = [Knot]
+
+initialRopeN :: RopeN
+initialRopeN = replicate 10 (0, 0)
+
+moveRopeN :: RopeN -> Move -> RopeN
+moveRopeN ((headX, headY):tail) (x, y) = adjustTailN ((headX + x, headY + y):tail)
+
+adjustTailN :: RopeN -> RopeN
+adjustTailN = scanl1 adjustTail'
+
+adjustTail' a b = snd $ adjustTail (a, b)
+
+-- part 1
 
 type Rope = ((Int, Int), (Int, Int))
 type Move = (Int, Int)
@@ -64,6 +91,12 @@ adjustTail ((headX, headY), (tailX, tailY))
     | diffX == -1 && diffY == 2  = ((headX, headY), (tailX - 1, tailY + 1))
     | diffX == 1  && diffY == -2 = ((headX, headY), (tailX + 1, tailY - 1))
     | diffX == -1 && diffY == -2 = ((headX, headY), (tailX - 1, tailY - 1))
+
+    -- new moves, part 2
+    | diffX == 2 && diffY == 2   = ((headX, headY), (tailX + 1, tailY + 1))
+    | diffX == 2 && diffY == -2  = ((headX, headY), (tailX + 1, tailY - 1))
+    | diffX == -2 && diffY == 2  = ((headX, headY), (tailX - 1, tailY + 1))
+    | diffX == -2 && diffY == -2 = ((headX, headY), (tailX - 1, tailY - 1))
 
     | otherwise = ((headX, headY), (tailX, tailY))
     where
