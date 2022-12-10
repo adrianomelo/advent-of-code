@@ -1,17 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# OPTIONS_GHC -Wno-overlapping-patterns #-}
-{-# LANGUAGE FlexibleContexts  #-}
 
 module Main where
 
-import qualified Data.Char  as Char
-import           Data.List  (zipWith5)
-import qualified Data.List  as List
-import qualified Data.Map   as Map
-import qualified Data.Maybe as Maybe
-import qualified Data.Ord   as Ord
 import           System.IO
-
 
 main :: IO ()
 main = do
