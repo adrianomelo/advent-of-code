@@ -19,7 +19,7 @@ main = do
     content <- lines <$> hGetContents handle
 
     let ops = map parse content
-    let opsWithCycle = concatMap mapToInt ops
+    let opsWithCycle = concatMap opToCycles ops
 
     let cycles = scanl (+) 1 opsWithCycle
     let cyclesWithIndex = zip [1..] cycles
@@ -39,8 +39,8 @@ data Op
     | Addx Int
     deriving (Show)
 
-mapToInt (Addx n) = [0, n]
-mapToInt _ = [0]
+opToCycles (Addx n) = [0, n]
+opToCycles _ = [0]
 
 parse ('a':'d':'d':'x':' ':number) = Addx (read number)
 parse _ = NoOp
