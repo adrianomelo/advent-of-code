@@ -27,10 +27,10 @@ main = do
     let signal = filter (\(i,_) -> i `mod` 40 - 20 == 0) cyclesWithIndex
     let signalSum = sum $ map (uncurry (*)) signal
 
-    let tick = concatMap draw cyclesWithIndex
+    let drawing = concatMap draw cyclesWithIndex
 
     -- print signalSum
-    putStr tick
+    putStr drawing
 
     hClose handle
 
@@ -45,14 +45,14 @@ mapToInt _ = [0]
 parse ('a':'d':'d':'x':' ':number) = Addx (read number)
 parse _ = NoOp
 
-draw (a, b)
+draw (index, spritePosition)
     | spriteInPosition && endOfLine = "#\n"
     | not spriteInPosition && endOfLine = ".\n"
     | spriteInPosition = "#"
     | otherwise = "."
     where
-        position = a `mod` 40
-        diff = abs (b - position + 1)
+        position = index `mod` 40
+        diff = abs (spritePosition - position + 1)
         spriteInPosition = diff < 2
         endOfLine = position == 0
 
