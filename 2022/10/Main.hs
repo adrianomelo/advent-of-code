@@ -29,12 +29,7 @@ main = do
 
     let tick = concatMap draw cyclesWithIndex
 
-    -- print ops
-    -- print $ take 20 opsWithCycle
-    -- print cycles
-    -- print signal
     -- print signalSum
-    -- print cyclesWithIndex
     putStr tick
 
     hClose handle
