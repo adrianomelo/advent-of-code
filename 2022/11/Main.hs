@@ -8,7 +8,6 @@ import qualified Data.List as List
 import qualified Data.Map as Map
 import Data.Tuple (swap)
 import Data.Tuple.Extra (fst3)
-import Data.Int (Int64)
 
 main :: IO ()
 main = do
@@ -21,16 +20,18 @@ main = do
 
     let finalPosition = Map.fromList $ map (\(m,_,id) -> (id, m)) allThrows
 
+--     print finalPosition
+
     print $ countValues $ map fst3 allThrows
     print $ countValues $ map snd $ Map.toList finalPosition
 
     hClose handle
 
 data Monkey = Monkey
-    { startingItems :: [Int64]
-    , operation :: Int64 -> Int64
-    , test :: Int64 -> Bool
-    , testNumber :: Int64
+    { startingItems :: [Int]
+    , operation :: Int -> Int
+    , test :: Int -> Bool
+    , testNumber :: Int
     , outputTrue :: Int
     , outputFalse :: Int
     }
@@ -52,18 +53,18 @@ computeNextMove (n, item, id) = (newMonkey, worryLevel, id)
     where
         monkey = operations !! n
         newNumber = operation monkey item
-        (_,worryLevel) = fromIntegral newNumber `divMod` divisor
+        worryLevel = fromIntegral newNumber `mod` commonMultiple
         -- (_,worryLevel) = fromIntegral newNumber `divMod` testNumber monkey
         -- worryLevel = newNumber
         output = test monkey worryLevel
         newMonkey = if output then outputTrue monkey else outputFalse monkey
 
-initialState = [(monkey, item, "id-" ++ show monkey ++ "-" ++ show item) | (monkey, items) <- mapped, item <- items]
+initialState = [(monkey, item, "id-" ++ show monkey ++ "-" ++ show id) | (monkey, items) <- mapped, (id, item) <- zip [0..] items]
     where
         mapped = zipWith (\x op -> (x, startingItems op)) [0..] operations
 
 
-divisor = List.product $ map testNumber operations 
+commonMultiple = List.product $ map testNumber operations 
 
 operations = operations2
 
