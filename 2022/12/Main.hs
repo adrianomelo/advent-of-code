@@ -5,116 +5,64 @@
 
 module Main where
 
--- import qualified Data.Char  as Char
--- import           Data.List  (zipWith5)
--- import qualified Data.List  as List
--- import qualified Data.Map   as Map
--- import qualified Data.Maybe as Maybe
-import qualified Data.Ord   as Ord
+import           Control.Monad    (guard)
+import qualified Data.Char        as Char
+import           Data.Graph.AStar (aStar)
+import qualified Data.HashSet     as HashSet
+import qualified Data.List        as List
+import qualified Data.Map         as Map
+import qualified Data.Maybe       as Maybe
+import           Debug.Trace      (traceM)
 import           System.IO
-import qualified Data.List as List
-import qualified Data.Set as Set
-import qualified Data.Maybe as Maybe
-import qualified Data.Map as Map
-import qualified Data.Char as Char
-import qualified Data.HashPSQ as Queue
--- import qualified Data.PSQueue as PSQ
-import Control.Monad (guard)
-import Debug.Trace (traceM)
-
--- type Item = (Int, Int, Char)
 
 main :: IO ()
 main = do
     handle <- openFile "input.txt" ReadMode
     content <- lines <$> hGetContents handle
 
-    -- let ln = zip [0..] content
-    -- let indexed = [(i, j, char) | (i, oneLine) <- zip [0..] content, (j, char) <- zip [0..] oneLine]
-
     let indexed = indexStringList content
     let start@(startPosition, _) = Maybe.fromJust $ List.find isStart indexed
     let end@(endPosition, _) = Maybe.fromJust $ List.find isEnd indexed
-
     let nodeMap = Map.fromList indexed
-    let visitedSet = Set.singleton (0, 0)
 
-    print nodeMap
-    let queue = Queue.singleton startPosition 0 0
-    -- let path = walkNodes nodeMap visitedSet endPosition queue
-    let path = walkNodes nodeMap visitedSet endPosition [(0, startPosition)]
+    let findPath = aStar                            -- A Star alg. partially applied (without starting point)
+                   (neighbors nodeMap)   -- The graph we are searching through, given as a function from vertices to their neighbours.
+                   (\_ _ -> 1)                      -- Distance function between neighbouring vertices of the graph. This will never be applied to vertices that are not neighbours, so may be undefined on pairs that are not neighbours in the graph.
+                   (distance endPosition)           -- Heuristic distance to the (nearest) goal. This should never overestimate the distance, or else the path found may not be minimal.
+                   (== endPosition)                 -- The goal, specified as a boolean predicate on vertices.
 
-    -- print $ 1000 - path
-    print path
+    -- part 1
+    -- print $ length $ Maybe.fromJust $ findPath startPosition
+
+    -- part 2
+    let starts = map fst . filter isA $ indexed
+    print $ minimum $ map length $ Maybe.mapMaybe findPath starts
 
     hClose handle
 
-walkNodes :: Map.Map (Int, Int) Int -> Set.Set (Int, Int) -> (Int, Int) -> [(Int, (Int, Int))] -> Int
-walkNodes nodeMap visitedSet end (n@(dist, nPos):ns)
-    | end == nPos = dist
-    | otherwise = walkNodes nodeMap newVisitedSet end ns'
+distance :: (Int, Int) -> (Int, Int) -> Int
+distance (x1, y1) (x2, y2) = abs (x1 - x2) + abs (y1 - y2)
+
+neighbors :: Map.Map (Int, Int) Int -> (Int, Int) -> HashSet.HashSet (Int, Int)
+neighbors nodeMap pos = HashSet.fromList filtered
     where
-        -- (nextKey, nextPriority, nextValue) = Maybe.fromJust $ Queue.findMin queue
-        nextMoves = possibleMoves nPos
-        allowedMoves = filter (isAllowedToMove nodeMap visitedSet nPos) nextMoves
-        allowedMovesWithDist = map (\x -> (dist + 1, x)) allowedMoves
-        newVisitedSet = Set.insert nPos visitedSet
+        moves = possibleMoves pos
+        filtered = filter (isAllowedToMove nodeMap pos) moves
 
-        ns' = ns ++ allowedMovesWithDist
-
-        -- newQueue' = Queue.deleteMin queue
-        -- newQueue = List.foldl (\q k -> Queue.insert k (nextPriority+1) (nextPriority+1) q) queue allowedMoves
-
-        -- newNs = ns ++ allowedMovesWithDist
-        -- newNs = List.sortOn snd newNs'
-
--- walkNodes :: Map.Map (Int, Int) Int -> Set.Set (Int, Int) -> (Int, Int) -> Queue.HashPSQ (Int, Int) Int Int -> Int
--- walkNodes nodeMap visitedSet end queue
---     | end == nextKey = nextPriority
---     | otherwise = walkNodes nodeMap newVisitedSet end newQueue
---     where
---         (nextKey, nextPriority, nextValue) = Maybe.fromJust $ Queue.findMin queue
---         nextMoves = possibleMoves nextKey
---         allowedMoves = filter (isAllowedToMove nodeMap visitedSet nextKey) nextMoves
---         -- allowedMovesWithDist = map (\x -> (x, dist + 1)) allowedMoves
---         newVisitedSet = Set.insert nextKey visitedSet
-
---         newQueue' = Queue.deleteMin queue
---         newQueue = List.foldl (\q k -> Queue.insert k (nextPriority+1) (nextPriority+1) q) queue allowedMoves
-
---         -- newNs = ns ++ allowedMovesWithDist
---         -- newNs = List.sortOn snd newNs'
-
-
-isAllowedToMove nodeMap visitedSet from to = notVisited && isNode && isMovePossible
+isAllowedToMove nodeMap from to = isNode && isMovePossible
     where
-        notVisited = Set.notMember to visitedSet
         isNode = Map.member to nodeMap
         isMovePossible = canMove nodeMap from to
 
--- walkNodes nodes visited start end = do
---     nextNode <- possibleMoves start
-
---     guard $ Set.notMember nextNode visited
---     guard $ Map.member nextNode nodes
---     guard $ canMove nodes start nextNode
-
---     if nextNode == end
---         then return [nextNode]
---         else do
---             let nextVisited = Set.insert nextNode visited
---             next <- walkNodes nodes nextVisited nextNode end
---             return $ nextNode : next
-
--- canMove :: p -> a -> a -> Bool
 canMove map p1 p2 = (a >= 97 && b >= 97 && (b <= a || (a + 1) == b)) || a == 83 || a == 122 && b == 69
     where
         a =  Map.findWithDefault 0 p1 map
         b =  Map.findWithDefault 0 p2 map
 
-possibleMoves (a, b) = [(a, b - 1), (a, b + 1), (a - 1, b), (a + 1, b)]
+possibleMoves (a, b) = [(a, b + 1), (a, b - 1), (a + 1, b), (a - 1, b)]
 
 isStart (_,c) = c == 83 --'S'
+isA (_,c) = c == 97 --'a'
 isEnd (_,c) = c == 69 -- 'E'
 
 indexStringList :: [[Char]] -> [((Int, Int), Int)]
