@@ -1,19 +1,20 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
-import Data.Attoparsec.Text
-    ( choice, sepBy, decimal, char, endOfLine, parseOnly, string )
-import System.IO
-    ( hClose, openFile, hGetContents, IOMode(ReadMode) )
-import Data.Either (fromRight)
-import Data.Text (pack)
-import Data.List (sort)
-import GHC.OldList (elemIndex)
-import Data.Maybe (catMaybes)
-import Data.HashSet (fromList, HashSet)
+import           Data.Attoparsec.Text (char, choice, decimal, endOfLine,
+                                       parseOnly, sepBy, string)
+import           Data.Either          (fromRight)
+import           Data.HashSet         (HashSet, empty, fromList, insert, member,
+                                       size)
+import           Data.List            (sort)
+import           Data.Maybe           (catMaybes)
+import           Data.Text            (pack)
+import           GHC.OldList          (elemIndex)
+import           System.IO            (IOMode (ReadMode),
+                                       NewlineMode (outputNL), hClose,
+                                       hGetContents, openFile)
 
 
 main :: IO ()
@@ -21,20 +22,68 @@ main = do
     handle <- openFile "input.txt" ReadMode
     content <- hGetContents handle
 
-    let input = parse content
+    let input = concatMap buildPaths $ parse content
 
-    let rocks = createRockSet input
-    print rocks
+    let rockSet = fromList input
+    let bb@(_, (_, maxY)) = boundingBox input
+
+    print maxY
+    let initialSandSet = empty --fromList [(500,8), (499,8), (501, 8),(500,7)]
+    let sandSet = fall rockSet initialSandSet maxY (500, 0)
+
+    -- print initialSandSet
+
+    putStrLn $ draw bb rockSet sandSet
+    print $ size sandSet
 
     hClose handle
 
 
-createRockSet :: [[Rock]] -> HashSet Rock
-createRockSet = fromList . concatMap buildPaths
+fall :: HashSet Point -> HashSet Point -> Int -> Rock -> HashSet Point
+fall rockSet sandSet maxY item@(x, y)
+  | hasFallenIntoAbysm = sandSet
+  | canMoveDown = fall rockSet sandSet maxY down
+  | canMoveDownLeft = fall rockSet sandSet maxY downLeft
+  | canMoveDownRight = fall rockSet sandSet maxY downRight
+  -- | otherwise = insert item sandSet
+  | otherwise = fall rockSet (insert item sandSet) maxY (500, 0)
+  where
+    canMove toPos = not (member toPos rockSet || member toPos sandSet)
+
+    down = (x, y + 1)
+    downLeft = (x - 1, y + 1)
+    downRight = (x + 1, y + 1)
+
+    canMoveDown = canMove down
+    canMoveDownLeft = canMove downLeft
+    canMoveDownRight = canMove downRight
+    hasFallenIntoAbysm = y > maxY
+
+draw :: (Point, Point) -> HashSet Rock -> HashSet Rock -> String
+draw ((minX, minY), (maxX, maxY)) rockSet sandSet = unlines output
+  where
+    rows = [minY..maxY]
+    cells = [minX..maxX]
+    output = map (\y -> map (\x -> drawSingle rockSet sandSet (x,y)) cells) rows
+
+drawSingle :: HashSet Rock -> HashSet Rock -> Point -> Char
+drawSingle rockSet sandSet position
+  | member position rockSet = '#'
+  | member position sandSet = 'o'
+  | otherwise = '.'
+
+boundingBox :: [Rock] -> (Rock, Rock)
+boundingBox input = ((minX, 0), (maxX, maxY))
+  where
+    xs = map fst input
+    ys = map snd input
+    minX = minimum xs
+    maxX = maximum xs
+    maxY = maximum ys
 
 buildPaths :: [Rock] -> [Rock]
-buildPaths [] = []
-buildPaths [_] = []
+buildPaths []         = []
+buildPaths [_]        = []
 buildPaths (a:b:rest) = buildPath a b ++ buildPaths (b:rest)
 
 buildPath :: Rock -> Rock -> Path
@@ -48,6 +97,7 @@ buildPath (ax, ay) (bx, by)
     endY = max ay by
 
 type Rock = (Int, Int)
+type Point = Rock
 type Path = [Rock]
 
 parse :: String -> [[Rock]]
