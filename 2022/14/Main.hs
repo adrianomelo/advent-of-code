@@ -27,17 +27,40 @@ main = do
     let rockSet = fromList input
     let bb@(_, (_, maxY)) = boundingBox input
 
-    print maxY
+    -- print maxY
     let initialSandSet = empty --fromList [(500,8), (499,8), (501, 8),(500,7)]
-    let sandSet = fall rockSet initialSandSet maxY (500, 0)
 
-    -- print initialSandSet
+    let part1 = fall rockSet initialSandSet maxY (500, 0)
+    putStrLn $ draw bb rockSet part1
+    print $ size part1
 
-    putStrLn $ draw bb rockSet sandSet
-    print $ size sandSet
+    let part2 = fall' rockSet initialSandSet maxY (500, 0)
+    putStrLn $ draw bb rockSet part2
+    print $ size part2
 
     hClose handle
 
+
+fall' :: HashSet Point -> HashSet Point -> Int -> Rock -> HashSet Point
+fall' rockSet sandSet maxY item@(x, y)
+  | containsFirst = sandSet
+  | canMoveDown = fall' rockSet sandSet maxY down
+  | canMoveDownLeft = fall' rockSet sandSet maxY downLeft
+  | canMoveDownRight = fall' rockSet sandSet maxY downRight
+  -- | otherwise = insert item sandSet
+  | otherwise = fall' rockSet (insert item sandSet) maxY (500, 0)
+  where
+    canMove toPos = not (member toPos rockSet || member toPos sandSet || snd toPos == maxY + 2)
+
+    down = (x, y + 1)
+    downLeft = (x - 1, y + 1)
+    downRight = (x + 1, y + 1)
+
+    canMoveDown = canMove down
+    canMoveDownLeft = canMove downLeft
+    canMoveDownRight = canMove downRight
+
+    containsFirst = member (500, 0) sandSet
 
 fall :: HashSet Point -> HashSet Point -> Int -> Rock -> HashSet Point
 fall rockSet sandSet maxY item@(x, y)
@@ -62,7 +85,7 @@ fall rockSet sandSet maxY item@(x, y)
 draw :: (Point, Point) -> HashSet Rock -> HashSet Rock -> String
 draw ((minX, minY), (maxX, maxY)) rockSet sandSet = unlines output
   where
-    rows = [minY..maxY]
+    rows = [minY..(maxY + 2)]
     cells = [minX..maxX]
     output = map (\y -> map (\x -> drawSingle rockSet sandSet (x,y)) cells) rows
 
