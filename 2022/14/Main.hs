@@ -31,11 +31,11 @@ main = do
     let initialSandSet = empty --fromList [(500,8), (499,8), (501, 8),(500,7)]
 
     let part1 = fall rockSet initialSandSet maxY (500, 0)
-    putStrLn $ draw bb rockSet part1
-    print $ size part1
+    -- putStrLn $ draw bb rockSet part1
+    -- print $ size part1
 
     let part2 = fall' rockSet initialSandSet maxY (500, 0)
-    putStrLn $ draw bb rockSet part2
+    -- putStrLn $ draw bb rockSet part2
     print $ size part2
 
     hClose handle
