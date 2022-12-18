@@ -26,22 +26,23 @@ main = do
     let faces = countFaces cubes input
     print faces
 
-    let allNeighbours = airTrapped cubes input
-    print allNeighbours
+    let trapped = airTrapped cubes input
+    print trapped
+    -- print $ nub . group . filter (not . isCube cubes) . sort . concatMap neighbours $ input
 
-    print $ faces - allNeighbours -- not 4434
+    -- print $ faces - allNeighbours -- not 4434
 
     hClose handle
 
-airTrapped cubes = length . filter (== 6) . map length . group . filter (not . isTouching cubes) . sort . concatMap neighbours
+airTrapped cubes = map head . filter (\x -> 6 == length x) . nub . group . filter (not . isCube cubes) . sort . concatMap neighbours
 
 countFaces :: HashSet Point -> [Point] -> Int
 countFaces cubes = foldl (\x cube -> x + countFacesSingle cubes cube) 0
 
 countFacesSingle :: HashSet Point -> Point -> Int
-countFacesSingle cubes cube = 6 - length (filter (isTouching cubes) $ neighbours cube)
+countFacesSingle cubes cube = 6 - length (filter (isCube cubes) $ neighbours cube)
 
-isTouching set position = member position set
+isCube set position = member position set
 
 neighbours (x, y, z) = [ (x + 1, y, z)
                        , (x - 1, y, z)
