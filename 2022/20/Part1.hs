@@ -21,19 +21,14 @@ main = do
     handle <- openFile "input.txt" ReadMode
     content <- hGetContents handle
 
-    let input = map (* 811589153) $ parse content
+    let input = parse content
     let size = length input
     let list = [0..(size-1)]
     let seq = fromList list
 
-    -- let newOrder = reorder input seq list
-
-    let newOrder = take 11 $ iterate (\x -> reorder input x list) seq
-    -- print newOrder
-
-    -- let newList = map (map (input !!) . toList) newOrder
-    let newList = map (input !!) $ toList $ last newOrder
-    print newList
+    let newOrder = reorder input seq list
+    -- let newList = map (map (input !!) . toList . snd) newOrde
+    let newList = map (input !!) $ toList newOrder
 
     let zeroIndex = fromJust $ 0 `elemIndex` newList
     let part1 = sum $ map ((newList !!) . (`mod` size) . (+ zeroIndex)) [1000, 2000, 3000]
@@ -41,6 +36,7 @@ main = do
     print part1
 
     hClose handle
+
 
 reorder original seq [] = seq
 reorder original seq (i:is) = reorder original seq'' is
